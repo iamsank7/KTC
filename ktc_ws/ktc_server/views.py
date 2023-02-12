@@ -6,9 +6,10 @@ import time
 from .ecommerce_store import EcommerceStore
 from .handler import ReplyHandler
 
-wa_token = 'EAAWNXwCMvnYBAKZCYLZB89szK9emalxxPwfJkZBLjpYfghmC3AMEvZBffuS0zbZC45Xr90FS9Nv24KxaY6N7FeMcSUpJAmgu7y2XrlgNMnltcCZC5bSTg7seEObZCQHFVJaNZAFwytZAZCKy1oa7cyieGq3FDShqvfZBnUAnYE9dByGbMFCkCC6Al9pOD2BkwFGHZBdLFhgN7NYMdQZDZD'
+wa_token = 'EAAWNXwCMvnYBALmTm0A7zWtC4LYedAhNMbcWrVC2aAY72oWwyvvppLW8hGRecpEgfPFdX38wLWmnatFEiqYNrA1XGVxVHf08bVZCuwx2SvAI3AAUXOD8FbYpYowZA4CtzeBvLJDWgM4ZARa8R0vwlSmizcSEFt4Fb5C6LUMWQo1DtwxOLW8ZAlRMRgg5PteV3KJoj8JReAZDZD'
 webhook_verify_token = 'a5ab670c-a4ac-11ed-b9df-0242ac120003'
 phone_num_id = '116564778008868'
+store = EcommerceStore()
 
 @api_view(['GET', 'POST'])
 def whatsAppWebhhok(req):
@@ -18,7 +19,7 @@ def whatsAppWebhhok(req):
         messenger = WhatsApp(token=wa_token, phone_number_id=phone_num_id)
         
         changed_field = messenger.changed_field(data)
-        store = EcommerceStore()
+        
         handler = ReplyHandler(messenger)
 
         if changed_field == "messages":
@@ -40,85 +41,23 @@ def whatsAppWebhhok(req):
                 )
                 
                 if message_type == "text":
-                    handler.handleText(data)
+                    handler.handleText(name, mobile)
                 if message_type == 'interactive' and interactive_message_type['type'] == 'button_reply':
-                    print(interactive_message_type['button_reply']['id'])
-                    if interactive_message_type['button_reply']['id'] == 'speak_to_human':
-                        messenger.send_message("Arguably, chatbots are faster than humans.\nCall my human with the below details:", recipient_id=mobile)
-                        messenger.send_contacts(
-                            [{
-                                "addresses": [{
-                                    
-                                    "city": "GWL",
-                                    "state": "MP",
-                                    "zip": "474003",
-                                    "country": "INDIA",
-                                    "type": "HOME",
-                                    }],
-                                "name": {
-                                "formatted_name": "NAME",
-                                "first_name": "Sankalp",
-                                    "last_name": "Gupta",
-                                },
-                                "phones": [{
-                                    "phone": "7894561230",
-                                    "type": "HOME"
-                                }],
-                                }
-                            ],
-                            recipient_id=mobile
-                        )
-                    if interactive_message_type['button_reply']['id'] == 'see_categories':
+                    reply_button_id = interactive_message_type['button_reply']['id']
+                    if reply_button_id == 'speak_to_human':
+                        handler.handleHumanAssistance(mobile) 
+                    
+                    if reply_button_id == 'see_categories':
                         categories = store.getAllCategories()
-                        print(categories)
-                        reply_buttons = []
-                        for category in categories:
-                            reply_buttons.append({
-                                "type": "reply",
-                                "reply": {
-                                    "id": "category_{}".format(category['id']),
-                                    "title": category['name']
-                                }
-                            })
-                        messenger.send_reply_button(
-                            recipient_id=mobile,
-                            button={
-                                "type": "button",
-                                "body": {
-                                    "text": "We have several categories.\nChoose one of them.",
-                                },
-                                "action": {
-                                    "buttons": reply_buttons
-                                }
-                            },
-                        )
-                    if interactive_message_type['button_reply']['id'].startswith("category_"):
-                        category_id = interactive_message_type['button_reply']['id'].split("_")[1]
+                        handler.handleSeeCategories(mobile, categories)
+                        
+                    if reply_button_id.startswith("category_"):
+                        category_id = reply_button_id.split("_")[1]
                         products = store.getProductsInCategory(category_id)
-                        print(products[:10])
-                        product_rows = []
-                        for product in products:
-                            product_rows.append({
-                                "id": "product_{}".format(product['id']),
-                                "title": product['title'][:20],
-                                "description": product['description'][:72] if 'description' in product else ""
-                            })
-                        product_rows = product_rows[:10]
-                        messenger.send_button(
-                            recipient_id=mobile,
-                            button={
-                                "body": "Please select one of the products below:",
-                                "action": {
-                                    "button": "Select a product",
-                                    "sections": [{
-                                        "title": "Our Products",
-                                        "rows": product_rows
-                                    }]
-                                },
-                            },
-                        )
-                    if interactive_message_type['button_reply']['id'].startswith("add_to_cart_"):
-                        product_id = interactive_message_type['button_reply']['id'].split("_")[-1]
+                        handler.handleProductsInCategory(mobile, products[:10])
+                        
+                    if reply_button_id.startswith("add_to_cart_"):
+                        product_id = reply_button_id.split("_")[-1]
                         product = store.getProductById(product_id)
                         CustomerSession[mobile]['cart'].append(product)
                         messenger.send_reply_button(
@@ -148,7 +87,7 @@ def whatsAppWebhhok(req):
                             }
                             },
                         )
-                    if interactive_message_type['button_reply']['id'].startswith("checkout"):
+                    if reply_button_id.startswith("checkout"):
                         pass
                         
                 if message_type == 'interactive' and interactive_message_type['type'] == 'list_reply':
