@@ -1,3 +1,7 @@
-from django.db import models
+from mongoengine.document import Document
+from mongoengine.fields import StringField
+from decouple import config
 
-# Create your models here.
+class Product(Document):
+    title = StringField(max_length=20, required=True)
+    description = StringField(max_length=100, required=True)

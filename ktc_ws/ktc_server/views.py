@@ -5,10 +5,11 @@ from heyoo import WhatsApp
 import time
 from .ecommerce_store import EcommerceStore
 from .handler import ReplyHandler
+from decouple import config
 
-wa_token = 'EAAWNXwCMvnYBALmTm0A7zWtC4LYedAhNMbcWrVC2aAY72oWwyvvppLW8hGRecpEgfPFdX38wLWmnatFEiqYNrA1XGVxVHf08bVZCuwx2SvAI3AAUXOD8FbYpYowZA4CtzeBvLJDWgM4ZARa8R0vwlSmizcSEFt4Fb5C6LUMWQo1DtwxOLW8ZAlRMRgg5PteV3KJoj8JReAZDZD'
-webhook_verify_token = 'a5ab670c-a4ac-11ed-b9df-0242ac120003'
-phone_num_id = '116564778008868'
+wa_token = config('WHATSAPP_ACCESS_TOKEN')
+webhook_verify_token = config('WA_WEBHOOK_VERIFY_TOKEN')
+phone_num_id = config('PHONE_NUMBER_ID')
 store = EcommerceStore()
 
 @api_view(['GET', 'POST'])
